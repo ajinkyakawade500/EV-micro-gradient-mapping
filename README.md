@@ -1,89 +1,70 @@
-# Hardware Architecture for Empirical Road Resistance and Micro-Gradient Mobile Mapping Fleets to Optimize Electric Vehicle Predictive Energy Routing
+# EV Micro-Gradient Mapping
 
-**Author:** **Ajinkya Kawade**
+### Measuring road geometry and testing its value for EV energy prediction
 
-**Date:** July 2026
+**Ajinkya Kawade · Independent technical whitepaper · Version 0.2.0 · 21 September 2026**
 
-**License:** Public Domain ([CC0 1.0 Universal](LICENSE))
+Original concept: July 2026. **Research proposal with a synthetic demonstration; no field validation or peer review is claimed.**
 
----
+## The idea, in plain language
 
-## Abstract
-Predictive energy routing for Electric Vehicles (EVs) remains severely bottlenecked by the low spatial resolution and static nature of current satellite-derived Digital Elevation Models (DEMs). These models fai l to capture localized micro-gradients, structural road banking, and dynamic rolling resistance coefficients ($C_{rr}$), causing significant divergence between predicted and real-world battery State of Charge (SoC). 
+Two routes with similar distances can use different amounts of battery energy. Climbing, descending, vehicle speed, wind, tyres and braking all matter. This project asks whether measuring short changes in road slope—and eventually road-surface behaviour—can improve those predictions enough to justify collecting the extra data.
 
-This whitepaper outlines a mobile fleet sensor architecture designed for integration into standard mapping vehicles (e.g., street-level photography fleets). By combining 6-axis Inertial Measurement Units (IMUs), Real-Time Kinematic (RTK) GNSS, barometric altimetry, solid-state LiDAR, and acoustic tire-friction arrays, mapping vehicles can generate a deterministic, high-resolution empirical database of road tractive resistance. This document is published defensively to establish open prior art, enabling the unrestricted global development of precision EV navigation systems.
+The proposed system uses mapping vehicles to collect road observations. GNSS positioning, inertial sensors and optional LiDAR would estimate road geometry. Microphones would be evaluated as clues about the surface. Separate force or energy measurements would be needed to test whether those clues predict rolling losses.
 
----
+The key question is measurable: **Does adding this information reduce energy-prediction error on roads and vehicles that were not used to calibrate the model?**
 
-## 1. The EV Routing Problem & Limitations of Existing Models
+## Read the research
 
-Current EV routing engines compute energy expenditure by applying vehicle mass and aerodynamic profiles over a sequence of road segments. The total tractive force ($F_{\text{total}}$) required to propel the vehicle is modeled as:
+| Resource | What it contains |
+|---|---|
+| [Technical whitepaper](paper/whitepaper.md) | Related work, corrected physics, proposed sensor architecture, uncertainty analysis and integration design |
+| [Field-validation protocol](paper/validation-protocol.md) | Baselines, calibration, independent measurements, held-out evaluation and decision criteria |
+| [Claim audit](paper/claim-audit.md) | What changed from the July draft and why |
+| [References](paper/references.md) · [BibTeX](references.bib) | Research papers, official specifications and documentation |
+| [Synthetic results](results/README.md) | A reproducible numerical example and all 324 sensitivity scenarios |
+| [Example data contract](data/README.md) | Units, provenance, uncertainty and a synthetic road-segment record |
 
-$$F_{\text{total}} = F_{\text{gravity}} + F_{\text{rolling}} + F_{\text{aerodynamic}} + F_{\text{inertial}}$$
+## What the demonstration establishes
 
-Where:
-*   $F_{\text{gravity}} = m \cdot g \cdot \sin(\theta)$
-*   $F_{\text{rolling}} = m \cdot g \cdot C_{rr} \cdot \cos(\theta)$
-*   $F_{\text{aerodynamic}} = \frac{1}{2} \cdot \rho \cdot C_d \cdot A \cdot v^2$
-*   $F_{\text{inertial}} = m \cdot a$
+The included model compares a known synthetic road profile with more coarsely sampled versions. It accounts for gravity, rolling resistance, aerodynamic drag, separate driving/regeneration efficiencies, a regeneration power limit and auxiliary loads.
 
-*(Where $m$ represents total vehicle mass, $g$ is gravitational acceleration, $\theta$ is the road gradient slope angle, $C_{rr}$ is the rolling resistance coefficient, $\rho$ is air density, $C_d$ is the aerodynamic drag coefficient, $A$ is the vehicle frontal area, $v$ is velocity, and $a$ is acceleration.)*
+![Synthetic profile and energy sensitivity; this is not measured road data](figures/sampling_energy.svg)
 
-### The Saturation and Resolution Deficit
-Standard routing frameworks pull elevation data from satellite frameworks like the Shuttle Radar Topography Mission (SRTM) or Copernicus DEM. These systems suffer from fundamental engineering limitations when applied to EV routing:
-1.  **Spatial Smoothing:** Satellite data typically resolves at 30-meter horizontal grids. Sudden grade breaks, steep switchbacks (ghat sections), and micro-topography are mathematically smoothed out, causing algorithms to underestimate the high power spikes required to overcome gravitational resistance on short, steep inclines.
-2.  **Canopy and Urban Obscuration:** In dense forests or deep urban canyons, satellite altimetry suffers from severe signal degradation, leading to interpolated elevation profiles that do not match physical road surfaces.
-3.  **Assumed Uniformity of $C_{rr}$:** Routing engines typically treat rolling resistance as a static constant across all tarmac. In reality, degraded concrete, rough asphalt, and water logging can increase $C_{rr}$ by greater than 15%, directly inducing unpredicted battery drain.
+Coarse sampling can alter calculated energy even when endpoint heights match. In the lossless limit, however, gravity depends only on the net height change. Both facts matter. A higher predicted power peak alone does not prove a larger total energy requirement.
 
----
+The numerical sweep varies slope amplitude, speed, sample spacing, grid alignment and regeneration limits. It includes a constant-grade control and a reference-resolution check. The plotted profile is an intentionally undulating stress case; **its numerical differences are not estimates of real-world range gains or of Copernicus/SRTM error**. [Methods and limitations](paper/whitepaper.md#8-reproducible-synthetic-demonstration)
 
-## 2. Proposed Mobile Sensor Architecture
+## Reproduce it
 
-To map these variables empirically, mapping vehicles must collect real-time chassis dynamics and road surface acoustics simultaneously. The tracking fleet uses a specialized four-tier hardware sensor array.
+The model and its tests use only the **Python 3.10+ standard library**. From the repository root:
 
-### Sensor Specifications and Operational Logic
+```bash
+python code/run_demo.py
+python -m unittest discover -s tests -v
+```
 
-| Sensor Class | Hardware Specifications | Target Physics Metric | Algorithmic Utility |
-| :--- | :--- | :--- | :--- |
-| **6-Axis Industrial IMU** | High-bias stability ($<0.05^\circ\text{/hr}$), high-frequency ($>200\text{ Hz}$) Accelerometers & Gyroscopes. | Instantaneous pitch angle ($\theta_{\text{pitch}}$) and roll angle ($\theta_{\text{roll}}$). | Isolates true vehicle attitude independent of vehicle vibrations, capturing accurate road slope changes at sub-meter intervals. |
-| **RTK-GNSS + Barometric Altimeter** | Multi-band L1/L2/L5 receiver with local RTK correction network subscription; MEMS piezoresistive pressure sensor. | Absolute ellipsoidal height ($z$-axis) down to $\pm2\text{ cm}$; Ambient pressure ($P$). | Bakes absolute elevation anchors into the IMU trajectory loop while tracking local air density changes ($\rho$) for aerodynamic calculations. |
-| **Solid-State LiDAR** | High-density, multi-echo, non-repeating scan pattern array (e.g., 905nm wavelength). | Digital surface twin; transverse road cross-sections ($C_{\text{bank}}$). | Identifies structural road banking and lateral slopes on tight curves. Steering against steep, banked switchbacks demands higher motor torque vectors. |
-| **Chassis-Mounted Acoustic Array** | Dual-element, weatherproof, directional microphones mounted in the wheel-well housing, shielded from aerodynamic wind noise. | Acoustic sound pressure level (SPL) frequency spectrum ($20\text{ Hz} - 20\text{ kHz}$) of tire-to-road interaction. | Machine learning models map the raw audio frequency signatures against calibrated road texture archetypes to output a precise localized $C_{rr}$ value. |
+To regenerate the optional figure:
 
----
+```bash
+python -m pip install -r requirements-figures.txt
+python code/plot_results.py
+```
 
-## 3. Sensor Fusion & The Empirical Data Pipeline
+The numerical outputs are saved under `results/`. Tests check analytical solutions, regeneration limits and energy conservation; they do not validate a physical sensor system.
 
-The raw telemetry streams must be fused to create a highly accurate, noise-free representation of the road's topology. 
+## Current scope
 
-### Step 1: Extended Kalman Filter (EKF) Attitude Fusion
-To derive the true road gradient, a localized EKF continuously fuses the high-frequency IMU pitch acceleration with the absolute position points provided by the RTK-GNSS system. This prevents accelerometer drift from corrupting the gradient mapping over long distances:
+- Implemented: a small energy model, synthetic sensitivity experiment, physics tests and a proposed data contract.
+- Proposed: sensor fusion, LiDAR processing, acoustic calibration, field collection and routing integration.
+- Open research questions: how much useful accuracy survives measurement noise, how well models transfer between vehicles, and which sensors justify their cost.
 
-$$\hat{\theta}(t) = f\left(\text{IMU}_{\text{gyro}}(t),\, \text{GNSS}_{\Delta z}(t),\, \text{Baro}_{\Delta P}(t)\right)$$
+## Citation and history
 
-### Step 2: Extracting Spatial Surface Geometry via LiDAR
-The solid-state LiDAR continuously measures the transverse angle of the lane. If a vehicle is cornering on a slope, the true gravitational load experienced by the electric drivetrain shifts due to centripetal vectors and the road's lateral banking angle ($\alpha$). The system records a combined spatial vector:
+Kawade, A. (2026). *Road Geometry and Surface-Resistance Mapping for EV Energy Prediction: A Sensor Architecture and Validation Framework* (Version 0.2.0). Independent technical whitepaper with synthetic demonstration. [GitHub repository](https://github.com/ajinkyakawade500/EV-micro-gradient-mapping).
 
-$$\vec{G}_{\text{effective}} = \begin{bmatrix} \theta_{\text{pitch}} \\ \alpha_{\text{bank}} \end{bmatrix}$$
+Machine-readable citation: [CITATION.cff](CITATION.cff). Revision details: [CHANGELOG.md](CHANGELOG.md). Authorship and AI assistance: [provenance statement](paper/provenance.md). The [July draft remains in Git history](https://github.com/ajinkyakawade500/EV-micro-gradient-mapping/blob/63d8c3819836abadf38ca3d4c4fbe695e930bc81/README.md).
 
-### Step 3: Acoustic Profiling for Friction Mapping
-The wheel-well microphones capture the high-frequency vibrations and acoustic friction of the tire rolling over the surface. The central computing unit extracts Mel-Frequency Cepstral Coefficients (MFCCs) from the audio stream. A pre-trained machine learning architecture runs on the edge to classify the road surface material:
+## License
 
-$$\text{Audio Spectrum File} \longrightarrow \text{MFCC Feature Extraction} \longrightarrow \text{Surface Classifier Model} \longrightarrow \text{Dynamic } C_{rr} \text{ Modifier}$$
-
----
-
-## 4. Routing Engine Integration (Valhalla/OSM Edge Costing)
-
-The resulting datasets are compressed and projected onto an OpenStreetMap (OSM) base layer map graph using a specialized edge-costing format. Instead of storing complex, heavy raw point-cloud data, each discrete road edge segment is injected with a small, highly compressed telemetry payload array:
-
-```json
-{
-  "edge_id": 987654321,
-  "length_meters": 120.5,
-  "base_gradient_pct": 6.82,
-  "micro_gradients": [6.1, 6.4, 6.8, 7.2, 7.1, 6.7],
-  "lateral_bank_deg": 1.45,
-  "empirical_crr": 0.0115,
-  "avg_baro_pa": 98450
-}
+Original repository material remains under [CC0 1.0](LICENSE). CC0 does not waive patent or trademark rights and does not determine freedom to operate. Referenced papers and any future external datasets retain their own terms. See [Creative Commons' legal text](https://creativecommons.org/publicdomain/zero/1.0/legalcode.en#s4).

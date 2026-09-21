@@ -1,0 +1,30 @@
+cff-version: 1.2.0
+message: "Please cite the technical whitepaper below and identify any numerical results as synthetic."
+title: "EV Micro-Gradient Mapping: Research Whitepaper and Synthetic Demonstration"
+authors:
+  - family-names: Kawade
+    given-names: Ajinkya
+version: 0.2.0
+date-released: 2026-09-21
+license: CC0-1.0
+repository-code: "https://github.com/ajinkyakawade500/EV-micro-gradient-mapping"
+url: "https://github.com/ajinkyakawade500/EV-micro-gradient-mapping"
+abstract: >-
+  An independent technical whitepaper proposing road geometry and surface-resistance
+  mapping for EV energy prediction, accompanied by a reproducible synthetic energy
+  model. The proposed sensor architecture and routing integration are not field validated.
+keywords:
+  - electric vehicles
+  - road grade
+  - rolling resistance
+  - energy prediction
+  - mobile mapping
+preferred-citation:
+  type: report
+  authors:
+    - family-names: Kawade
+      given-names: Ajinkya
+  title: "Road Geometry and Surface-Resistance Mapping for EV Energy Prediction: A Sensor Architecture and Validation Framework"
+  year: 2026
+  version: 0.2.0
+  url: "https://github.com/ajinkyakawade500/EV-micro-gradient-mapping/blob/main/paper/whitepaper.md"

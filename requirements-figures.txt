@@ -1,0 +1,2 @@
+# Optional; numerical reproduction and tests have no third-party dependencies.
+matplotlib==3.10.8

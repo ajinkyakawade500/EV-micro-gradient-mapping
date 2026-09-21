@@ -1,0 +1,45 @@
+{
+  "schema_version": "0.1.0",
+  "evidence_status": "synthetic_example",
+  "segment_id": "synthetic-segment-001",
+  "coordinate_reference": {
+    "horizontal_crs": "local Cartesian; no geographic location",
+    "vertical_datum": "arbitrary synthetic datum",
+    "chainage_basis": "horizontal plan-view distance in metres",
+    "direction": "increasing_chainage"
+  },
+  "horizontal_length_m": 30.0,
+  "graph_binding": null,
+  "profile": {
+    "interpolation": "piecewise_linear",
+    "samples": [
+      {"x_m": 0.0, "z_m": 0.0, "z_sigma_m": null},
+      {"x_m": 10.0, "z_m": 0.5, "z_sigma_m": null},
+      {"x_m": 20.0, "z_m": 1.5, "z_sigma_m": null},
+      {"x_m": 30.0, "z_m": 1.8, "z_sigma_m": null}
+    ],
+    "uncertainty_status": "not a measured estimate",
+    "spatial_covariance_reference": null
+  },
+  "crossfall_deg": null,
+  "surface_class": null,
+  "surface_class_confidence": null,
+  "resistance_prediction": {
+    "coefficient": null,
+    "interval": null,
+    "vehicle_tyre_context": null,
+    "calibration_reference": null
+  },
+  "observations": {
+    "independent_pass_count": 0,
+    "first_observed_utc": null,
+    "last_observed_utc": null,
+    "condition_context": null
+  },
+  "provenance": {
+    "method": "hand-written illustrative geometry, separate from the simulation profiles",
+    "calibration_id": null,
+    "source_observation_ids": [],
+    "quality_flags": ["synthetic", "not_for_navigation"]
+  }
+}
